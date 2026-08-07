@@ -1,7 +1,8 @@
 """
 RSS-based daily news generator + SMTP sender.
 - 从多个主流媒体 RSS 抓取不同类目的新闻（无需 API key）
-- 输出最多 20 条，按抓取时间排序并通过 SMTP 发邮件
+- 输出最多 20 条，按新闻重要性排序并通过 SMTP 发邮件
+- 重要性用简单启发式评分计算（来源权重、标题关键词、摘要长度、发布时间）
 环境变量：
   SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, EMAIL_FROM, EMAIL_TO
   TRANSLATE_API_URL, TRANSLATE_API_KEY (可选，用于翻译标题)
@@ -16,6 +17,7 @@ import pytz
 import feedparser
 import requests
 import time
+import re
 
 BJT = pytz.timezone("Asia/Shanghai")
 
@@ -82,6 +84,7 @@ def translate(text):
             pass
     return "(EN only) " + text
 
+
 def parse_time(entry):
     # feedparser 已解析的 published_parsed 可用；否则使用 published 字段解析
     try:
@@ -97,6 +100,7 @@ def parse_time(entry):
         pass
     return datetime.now(pytz.UTC)
 
+
 def fetch_from_feed(url):
     try:
         d = feedparser.parse(url)
@@ -106,6 +110,53 @@ def fetch_from_feed(url):
         return d.entries or []
     except Exception:
         return []
+
+
+def compute_importance(item):
+    """对新闻条目做一个简单的启发式评分，用于排序（越高越重要）。
+    规则示例：
+      - 来源权重（知名媒体加分）
+      - 标题关键词（breaking/独家/突发 等）
+      - 摘要长度（较长的摘要+1）
+      - 发布时间（24小时内略加分）
+    该函数可按需调整权重。
+    """
+    score = 0.0
+    title = (item.get('title_en') or '').lower()
+    source = (item.get('source') or '').lower()
+    desc = item.get('description') or ''
+
+    # 来源权重（示例列表）
+    high_sources = [
+        'reuters', 'nytimes', 'ft', 'financial times', 'bbc', 'aljazeera', 'cnn',
+        'techcrunch', 'wired', 'nature', 'sciencedaily'
+    ]
+    for s in high_sources:
+        if s in source:
+            score += 5
+            break
+
+    # 标题关键词
+    keywords = ['breaking', 'breaking news', 'exclusive', 'urgent', 'alert', '重大', '突发', '独家', '警报', '危机']
+    for k in keywords:
+        if k in title:
+            score += 4
+            break
+
+    # 摘要长度指示信息量
+    if len(desc) > 200:
+        score += 1
+
+    # 最近 24 小时略加分
+    try:
+        pub = item.get('published')
+        if pub and (datetime.now(pytz.UTC) - pub).total_seconds() < 86400:
+            score += 1
+    except Exception:
+        pass
+
+    return score
+
 
 def collect_top_items(limit=20):
     items = []
@@ -138,9 +189,14 @@ def collect_top_items(limit=20):
             time.sleep(0.2)  # polite delay
         if len(items) >= limit:
             break
-    # sort by published desc
-    items.sort(key=lambda x: x["published"], reverse=True)
+
+    # compute importance scores and sort by importance desc, then by published desc
+    for it in items:
+        it['importance'] = compute_importance(it)
+
+    items.sort(key=lambda x: (x.get('importance', 0), x.get('published')), reverse=True)
     return items[:limit]
+
 
 def format_bjt(dt):
     if not dt:
@@ -150,6 +206,7 @@ def format_bjt(dt):
     except Exception:
         return str(dt)
 
+
 def build_email_body(items):
     lines = []
     lines.append("日报：全球重要新闻（RSS 源，自动生成）\n")
@@ -158,11 +215,14 @@ def build_email_body(items):
         title_zh = translate(title_en)
         lines.append(f"{i}. 类目：{it['category']}")
         lines.append(f"   发布时间（北京时间）：{format_bjt(it.get('published'))}")
+        # 显示重要性评分以便可解释排序
+        lines.append(f"   重要性评分：{it.get('importance', 0):.1f}")
         lines.append(f"   标题（中/英）：{title_zh} / {title_en}")
         lines.append(f"   内容摘要：{it.get('description','')}")
         lines.append(f"   信息源：{it.get('source') or 'RSS'}")
         lines.append(f"   原文链接：{it.get('url')}\n")
     return "\n".join(lines)
+
 
 def send_email(subject, body_plain):
     if not (SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD and EMAIL_FROM and EMAIL_TO):
@@ -185,6 +245,7 @@ def send_email(subject, body_plain):
     server.send_message(msg)
     server.quit()
 
+
 def main():
     items = collect_top_items(limit=20)
     if not items:
@@ -193,6 +254,7 @@ def main():
     subject = f"每日要闻 — {datetime.now(BJT).strftime('%Y-%m-%d')}"
     send_email(subject, body)
     print("处理完成（已发送或打印邮件内容）。")
+
 
 if __name__ == "__main__":
     main()
