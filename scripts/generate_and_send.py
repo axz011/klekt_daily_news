@@ -71,7 +71,44 @@ EMAIL_TO = os.getenv("EMAIL_TO")
 TRANSLATE_API_URL = os.getenv("TRANSLATE_API_URL")
 TRANSLATE_API_KEY = os.getenv("TRANSLATE_API_KEY")
 
+# optional chinese conversion libs
+try:
+    from opencc import OpenCC
+    _opencc = OpenCC('t2s')
+except Exception:
+    _opencc = None
+
+try:
+    import zhconv
+except Exception:
+    zhconv = None
+
+
+def to_simplified(text):
+    """把文本转换为简体中文（尽量）。优先使用 opencc，其次尝试 zhconv，失败则原样返回。"""
+    if not text:
+        return text
+    try:
+        if _opencc:
+            return _opencc.convert(text)
+    except Exception:
+        pass
+    try:
+        if zhconv:
+            return zhconv.convert(text, 'zh-cn')
+    except Exception:
+        pass
+    return text
+
+
+def contains_cjk(text):
+    return bool(re.search('[\u4e00-\u9fff]', text or ''))
+
+
 def translate(text):
+    # 如果标题已经包含中文，就不再调用翻译接口，直接使用原文（后续会统一转换为简体）
+    if contains_cjk(text):
+        return text
     if TRANSLATE_API_URL and TRANSLATE_API_KEY:
         try:
             resp = requests.post(TRANSLATE_API_URL, json={"q": text, "target": "zh"}, headers={"Authorization": f"Bearer {TRANSLATE_API_KEY}"}, timeout=15)
@@ -82,7 +119,8 @@ def translate(text):
                 return str(j)
         except Exception:
             pass
-    return "(EN only) " + text
+    # 如果没有翻译接口且标题不是中文，保持原文（英文）并不做自动翻译
+    return text
 
 
 def parse_time(entry):
@@ -174,13 +212,22 @@ def collect_top_items(limit=20):
                 summary = (e.get("summary") or e.get("description") or "")[:800]
                 published = parse_time(e)
                 source = e.get("source", {}).get("title") if e.get("source") else e.get("author") or ""
+
+                # 计算中文标题：如果原始标题已含中文，直接使用；否则尝试翻译（若配置了翻译接口）
+                title_zh = translate(title)
+                title_zh = to_simplified(title_zh)
+                # 把摘要与来源也转换为简体，便于邮件展示
+                summary_s = to_simplified(summary)
+                source_s = to_simplified(source)
+
                 items.append({
                     "category": category,
                     "title_en": title,
-                    "description": summary,
+                    "title_zh": title_zh,
+                    "description": summary_s,
                     "url": link,
                     "published": published,
-                    "source": source
+                    "source": source_s
                 })
                 if len(items) >= limit:
                     break
@@ -212,8 +259,8 @@ def build_email_body(items):
     lines.append("日报：全球重要新闻（RSS 源，自动生成）\n")
     for i, it in enumerate(items, 1):
         title_en = it["title_en"]
-        title_zh = translate(title_en)
-        lines.append(f"{i}. 类目：{it['category']}")
+        title_zh = it.get("title_zh") or ''
+        lines.append(f"{i}. 类目：{to_simplified(it['category'])}")
         lines.append(f"   发布时间（北京时间）：{format_bjt(it.get('published'))}")
         # 显示重要性评分以便可解释排序
         lines.append(f"   重要性评分：{it.get('importance', 0):.1f}")
