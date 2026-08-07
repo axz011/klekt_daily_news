@@ -18,6 +18,7 @@ import feedparser
 import requests
 import time
 import re
+import subprocess
 
 BJT = pytz.timezone("Asia/Shanghai")
 
@@ -85,7 +86,7 @@ except Exception:
 
 
 def to_simplified(text):
-    """把文本转换为简体中文（尽量）。优先使用 opencc，其次尝试 zhconv，失败则原样返回。"""
+    """把文本转换为简体中文（尽量）。优先使用 opencc，其次尝试 zhconv，最后尝试调用系统 opencc 命令行（若存在）。失败则原样返回。"""
     if not text:
         return text
     try:
@@ -96,6 +97,13 @@ def to_simplified(text):
     try:
         if zhconv:
             return zhconv.convert(text, 'zh-cn')
+    except Exception:
+        pass
+    # fallback to system opencc CLI if available
+    try:
+        proc = subprocess.run(['opencc', '-c', 't2s.json'], input=text.encode('utf-8'), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=5)
+        if proc.returncode == 0:
+            return proc.stdout.decode('utf-8')
     except Exception:
         pass
     return text
@@ -119,7 +127,7 @@ def translate(text):
                 return str(j)
         except Exception:
             pass
-    # 如果没有翻译接口且标题不是中文，保持原文（英文）并不做自动翻译
+    # 没有可用翻译时直接返回原文（不加任何前缀）
     return text
 
 
@@ -213,13 +221,13 @@ def collect_top_items(limit=20):
                 published = parse_time(e)
                 source = e.get("source", {}).get("title") if e.get("source") else e.get("author") or ""
 
-                # 保留原始标题用于显示英文原文
+                # 保留原始标题用于显示原文（title_en 保持为抓取到的原始标题）
                 title_raw = title
-                title_en = title_raw  # 始终保存原始标题到 title_en，保证邮件中能显示原文（通常为英文或源语言）
+                title_en = title_raw
 
                 # 计算中文标题：如果原始标题已含中文，直接使用；否则尝试翻译（若配置了翻译接口）
                 title_zh = translate(title_raw)
-                # 有些旧代码会在无翻译时返回带前缀的标识，去除这类前缀以免污染展示
+                # 去除历史遗留前缀
                 if isinstance(title_zh, str) and title_zh.startswith("(EN only)"):
                     title_zh = title_zh.replace("(EN only)", "").strip()
                 title_zh = to_simplified(title_zh)
@@ -262,26 +270,59 @@ def format_bjt(dt):
         return str(dt)
 
 
+def fetch_page_title(url):
+    """尝试抓取文章页面并提取英文标题（og:title 或 HTML <title>），用于当 feed 标题为中文但页面有英文标题时回退使用。"""
+    try:
+        headers = {"User-Agent": "klekt-daily-news/1.0 (+https://github.com)"}
+        resp = requests.get(url, headers=headers, timeout=5)
+        if resp.status_code != 200:
+            return None
+        html = resp.text
+        # 尝试 og:title
+        m = re.search(r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']', html, flags=re.I)
+        if not m:
+            m = re.search(r'<meta[^>]+name=["\']twitter:title["\'][^>]+content=["\']([^"\']+)["\']', html, flags=re.I)
+        if m:
+            title = m.group(1).strip()
+            return title
+        # fallback to <title>
+        m = re.search(r'<title[^>]*>(.*?)</title>', html, flags=re.I|re.S)
+        if m:
+            title = re.sub(r'\s+', ' ', m.group(1)).strip()
+            return title
+    except Exception:
+        return None
+    return None
+
+
 def build_email_body(items):
     lines = []
     lines.append("日报：全球重要新闻（RSS 源，自动生成）\n")
     for i, it in enumerate(items, 1):
         title_en = it.get("title_en") or ''
         title_zh = it.get("title_zh") or ''
+        url = it.get('url') or ''
 
-        # 如果 title_en 跟 title_zh 一样（例如原始就是中文），仍然显示原始英文字段，
-        # 但如果 title_en 为空或仅包含非可视字符，则尝试使用原始字段回退。
-        if not title_en:
-            title_en = it.get('url') or ''
+        # 如果 title_en 看起来是中文（feed 给的是中文），尝试抓取页面标题作为英文回退
+        if contains_cjk(title_en):
+            fetched = fetch_page_title(url)
+            if fetched and not contains_cjk(fetched):
+                title_en_display = fetched
+            else:
+                # 如果抓取不到英文，就保留原始标题作为回退（但仍将内容简体化）
+                title_en_display = title_en
+        else:
+            title_en_display = title_en
 
         lines.append(f"{i}. 类目：{to_simplified(it['category'])}")
         lines.append(f"   发布时间（北京时间）：{format_bjt(it.get('published'))}")
         # 显示重要性评分以便可解释排序
         lines.append(f"   重要性评分：{it.get('importance', 0):.1f}")
-        lines.append(f"   标题（中/英）：{title_zh} / {title_en}")
+        # 标题：中文（简体） / 英文原文（或抓取到的页面标题）
+        lines.append(f"   标题（中/英）：{(title_zh or '—')} / {(title_en_display or '—')}")
         lines.append(f"   内容摘要：{it.get('description','')}")
         lines.append(f"   信息源：{it.get('source') or 'RSS'}")
-        lines.append(f"   原文链接：{it.get('url')}\n")
+        lines.append(f"   原文链接：{url}\n")
     return "\n".join(lines)
 
 
