@@ -213,16 +213,24 @@ def collect_top_items(limit=20):
                 published = parse_time(e)
                 source = e.get("source", {}).get("title") if e.get("source") else e.get("author") or ""
 
+                # 保留原始标题用于显示英文原文
+                title_raw = title
+                title_en = title_raw  # 始终保存原始标题到 title_en，保证邮件中能显示原文（通常为英文或源语言）
+
                 # 计算中文标题：如果原始标题已含中文，直接使用；否则尝试翻译（若配置了翻译接口）
-                title_zh = translate(title)
+                title_zh = translate(title_raw)
+                # 有些旧代码会在无翻译时返回带前缀的标识，去除这类前缀以免污染展示
+                if isinstance(title_zh, str) and title_zh.startswith("(EN only)"):
+                    title_zh = title_zh.replace("(EN only)", "").strip()
                 title_zh = to_simplified(title_zh)
+
                 # 把摘要与来源也转换为简体，便于邮件展示
                 summary_s = to_simplified(summary)
                 source_s = to_simplified(source)
 
                 items.append({
                     "category": category,
-                    "title_en": title,
+                    "title_en": title_en,
                     "title_zh": title_zh,
                     "description": summary_s,
                     "url": link,
@@ -258,8 +266,14 @@ def build_email_body(items):
     lines = []
     lines.append("日报：全球重要新闻（RSS 源，自动生成）\n")
     for i, it in enumerate(items, 1):
-        title_en = it["title_en"]
+        title_en = it.get("title_en") or ''
         title_zh = it.get("title_zh") or ''
+
+        # 如果 title_en 跟 title_zh 一样（例如原始就是中文），仍然显示原始英文字段，
+        # 但如果 title_en 为空或仅包含非可视字符，则尝试使用原始字段回退。
+        if not title_en:
+            title_en = it.get('url') or ''
+
         lines.append(f"{i}. 类目：{to_simplified(it['category'])}")
         lines.append(f"   发布时间（北京时间）：{format_bjt(it.get('published'))}")
         # 显示重要性评分以便可解释排序
