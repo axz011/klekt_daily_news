@@ -24,12 +24,12 @@ BJT = pytz.timezone("Asia/Shanghai")
 
 # 分类与 RSS 列表（可以按需增删）
 FEEDS = {
-    "政治": [
-        "https://feeds.reuters.com/Reuters/worldNews",
-        "https://www.bbc.co.uk/zhongwen/simp/index.xml",  # BBC 中文（部分中文）
-        "https://www.aljazeera.com/xml/rss/all.xml",
-        "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
-    ],
+    # "政治": [
+    #     "https://feeds.reuters.com/Reuters/worldNews",
+    #     "https://www.bbc.co.uk/zhongwen/simp/index.xml",  # BBC 中文（部分中文）
+    #     "https://www.aljazeera.com/xml/rss/all.xml",
+    #     "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+    # ],
     "经济": [
         "https://feeds.reuters.com/reuters/businessNews",
         "https://www.ft.com/?format=rss",
