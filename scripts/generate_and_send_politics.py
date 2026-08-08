@@ -75,7 +75,7 @@ FEEDS = {
     # "信息工程": [
     #     "https://www.usenix.org/feed",
     #     "https://www.infoq.com/feed/"
-    ]
+    # ]
 }
 
 # SMTP & env
