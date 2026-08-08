@@ -127,8 +127,26 @@ def translate(text):
                 return str(j)
         except Exception:
             pass
-    # 没有可用翻译时直接返回原文（不加任何前缀）
-    return text
+    # 没有可用翻译时返回提示信息
+    return "没有对应的译文"
+
+
+def translate_to_en(text):
+    # 将中文翻译为英文
+    if not contains_cjk(text):
+        return text  # 如果已经是英文，直接返回
+    if TRANSLATE_API_URL and TRANSLATE_API_KEY:
+        try:
+            resp = requests.post(TRANSLATE_API_URL, json={"q": text, "target": "en"}, headers={"Authorization": f"Bearer {TRANSLATE_API_KEY}"}, timeout=15)
+            if resp.status_code == 200:
+                j = resp.json()
+                if isinstance(j, dict):
+                    return j.get("translatedText") or j.get("translation") or next(iter(j.values()))
+                return str(j)
+        except Exception:
+            pass
+    # 没有可用翻译时返回提示信息
+    return "No translation available"
 
 
 def parse_time(entry):
@@ -232,15 +250,26 @@ def collect_top_items(limit=20):
                     title_zh = title_zh.replace("(EN only)", "").strip()
                 title_zh = to_simplified(title_zh)
 
-                # 把摘要与来源也转换为简体，便于邮件展示
-                summary_s = to_simplified(summary)
+                # 处理中英文摘要
+                summary_raw = summary
+                if contains_cjk(summary_raw):
+                    # 摘要是中文，生成英文版本
+                    summary_zh = to_simplified(summary_raw)
+                    summary_en = translate_to_en(summary_raw)
+                else:
+                    # 摘要是英文，生成中文版本
+                    summary_en = summary_raw
+                    summary_zh = to_simplified(translate(summary_raw))
+
+                # 把来源也转换为简体，便于邮件展示
                 source_s = to_simplified(source)
 
                 items.append({
                     "category": category,
                     "title_en": title_en,
                     "title_zh": title_zh,
-                    "description": summary_s,
+                    "summary_zh": summary_zh,
+                    "summary_en": summary_en,
                     "url": link,
                     "published": published,
                     "source": source_s
@@ -320,7 +349,9 @@ def build_email_body(items):
         lines.append(f"   重要性评分：{it.get('importance', 0):.1f}")
         # 标题：中文（简体） / 英文原文（或抓取到的页面标题）
         lines.append(f"   标题（中/英）：{(title_zh or '—')} / {(title_en_display or '—')}")
-        lines.append(f"   内容摘要：{it.get('description','')}")
+        # 内容摘要：中文 / 英文
+        lines.append(f"   内容摘要（中）：{it.get('summary_zh','')}")
+        lines.append(f"   内容摘要（英）：{it.get('summary_en','')}")
         lines.append(f"   信息源：{it.get('source') or 'RSS'}")
         lines.append(f"   原文链接：{url}\n")
     return "\n".join(lines)
