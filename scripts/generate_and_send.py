@@ -1,4 +1,12 @@
 """
+每日科技要闻：
+    AI/人工智能;
+    Robotics/机器人;
+    BCI/脑机接口;
+    SB/基础科学
+    IE/信息工程
+"""
+"""
 RSS-based daily news generator + SMTP sender.
 - 从多个主流媒体 RSS 抓取不同类目的新闻（无需 API key）
 - 输出最多 20 条，按新闻重要性排序并通过 SMTP 发邮件
@@ -37,33 +45,33 @@ FEEDS = {
     #     "https://www.aljazeera.com/xml/rss/all.xml",
     #     "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
     # ],
-    "经济": [
-        "https://feeds.reuters.com/reuters/businessNews",
-        "https://www.ft.com/?format=rss",
-        "https://rss.cnn.com/rss/money_news_international.rss"
-    ],
+    # "经济": [
+    #     "https://feeds.reuters.com/reuters/businessNews",
+    #     "https://www.ft.com/?format=rss",
+    #     "https://rss.cnn.com/rss/money_news_international.rss"
+    # ],
     "AI/人工智能": [
         "https://techcrunch.com/feed/",
         "https://www.technologyreview.com/feed/",
         "https://www.wired.com/feed/category/gear/latest/rss"
     ],
-    "机器人": [
+    "Robotics/机器人": [
         "https://spectrum.ieee.org/rss/fulltext/robotics",
         "https://roboticsbusinessreview.com/feed/"
     ],
-    "脑机接口": [
+    "BCI/脑机接口": [
         "https://www.nature.com/subjects/brain-computer-interface.rss",
         "https://www.sciencedaily.com/rss/mind_brain.xml"
     ],
-    "基础科学": [
+    "SB/基础科学": [
         "https://www.sciencedaily.com/rss/top/science.xml",
         "https://www.nature.com/nature/articles?type=research&format=rss"
     ],
-    "心理学/社会学": [
-        "https://www.sciencedaily.com/rss/mind_behavior.xml",
-        "https://www.psychologytoday.com/us/rss"
-    ],
-    "信息工程": [
+    # "心理学/社会学": [
+    #     "https://www.sciencedaily.com/rss/mind_behavior.xml",
+    #     "https://www.psychologytoday.com/us/rss"
+    # ],
+    "IE/信息工程": [
         "https://www.usenix.org/feed",
         "https://www.infoq.com/feed/"
     ]
@@ -403,7 +411,7 @@ def main():
     if not items:
         print("未获取到新闻：RSS 源可能暂时不可用或网络问题。")
     body = build_email_body(items)
-    subject = f"每日要闻 — {datetime.now(BJT).strftime('%Y-%m-%d')}"
+    subject = f"每日科技要闻 — {datetime.now(BJT).strftime('%Y-%m-%d')}"
     send_email(subject, body)
     print("处理完成（已发送或打印邮件内容）。")
 
