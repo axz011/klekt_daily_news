@@ -405,7 +405,7 @@ def build_email_body(items):
         else:
             title_en_display = title_en
 
-        lines.append(f"{i}. 类目：{to_simplified(it['category'])}")
+        lines.append(f"{i}. 类目：{to_simplified(it.get('category'))}")
         lines.append(f"   发布时间（北京时间）：{format_bjt(it.get('published'))}")
         # 显示重要性评分以便可解释排序
         lines.append(f"   重要性评分：{it.get('importance', 0):.1f}")
