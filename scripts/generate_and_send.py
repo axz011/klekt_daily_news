@@ -20,6 +20,13 @@ import time
 import re
 import subprocess
 
+# deep-translator for backup translation
+try:
+    from deep_translator import GoogleTranslator
+    _deep_translator_available = True
+except Exception:
+    _deep_translator_available = False
+
 BJT = pytz.timezone("Asia/Shanghai")
 
 # 分类与 RSS 列表（可以按需增删）
@@ -127,6 +134,12 @@ def translate(text):
                 return str(j)
         except Exception:
             pass
+    # 回退到 deep-translator
+    if _deep_translator_available:
+        try:
+            return GoogleTranslator(source='auto', target='zh-CN').translate(text)
+        except Exception:
+            pass
     # 没有可用翻译时返回提示信息
     return "没有对应的译文"
 
@@ -143,6 +156,12 @@ def translate_to_en(text):
                 if isinstance(j, dict):
                     return j.get("translatedText") or j.get("translation") or next(iter(j.values()))
                 return str(j)
+        except Exception:
+            pass
+    # 回退到 deep-translator
+    if _deep_translator_available:
+        try:
+            return GoogleTranslator(source='auto', target='en').translate(text)
         except Exception:
             pass
     # 没有可用翻译时返回提示信息
