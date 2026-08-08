@@ -287,17 +287,28 @@ def collect_top_items(limit=20):
                 published = parse_time(e)
                 source = e.get("source", {}).get("title") if e.get("source") else e.get("author") or ""
 
-                # 临时存储以检查相关性
+                # combined text 用于关键词判断
+                combined_text = f"{title} {summary}"
+
+                # 临时存储以检查相关性（不再把循环 category 写入 temp_item）
                 temp_item = {
                     "title": title,
-                    "summary": summary,
-                    "category": category
+                    "summary": summary
                 }
-                
+
                 # 关键过滤：检查是否与伊朗或乌克兰相关
                 if not is_relevant_news(temp_item):
                     continue
-                
+
+                # 根据内容再判定出实际类别，避免因为先处理的循环类别污染所有条目
+                if matches_category_keywords(combined_text, IRAN_KEYWORDS):
+                    detected_category = "Iran/伊朗"
+                elif matches_category_keywords(combined_text, UKRAINE_KEYWORDS):
+                    detected_category = "Ukraine/乌克兰"
+                else:
+                    # 回退到循环里的分类（极少数情况）
+                    detected_category = category
+
                 seen.add(link)
 
                 # 保留原始标题用于显示原文（title_en 保持为抓取到的原始标题）
@@ -326,7 +337,7 @@ def collect_top_items(limit=20):
                 source_s = to_simplified(source)
 
                 items.append({
-                    "category": category,
+                    "category": detected_category,
                     "title_en": title_en,
                     "title_zh": title_zh,
                     "summary_zh": summary_zh,
