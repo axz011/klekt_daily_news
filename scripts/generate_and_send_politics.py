@@ -35,20 +35,15 @@ BJT = pytz.timezone("Asia/Shanghai")
 
 # 关键词列表：用于筛选伊朗和乌克兰相关的新闻
 IRAN_KEYWORDS = [
-    'iran', 'iranian', '伊朗', '伊朗人',
+    'iran', 'iranian', '伊朗', 
     'tehran', '德黑兰',
-    'khamenei', '哈梅内伊',
-    'rouhani', '鲁哈尼',
-    'nuclear', '核', 'jcpoa', '伊核协议'
+    'jcpoa', '伊核协议'
 ]
 
 UKRAINE_KEYWORDS = [
-    'ukraine', 'ukrainian', '乌克兰', '乌克兰人',
+    'ukraine', 'ukrainian', '乌克兰', 
     'kyiv', 'kiev', '基辅',
-    'zelensky', 'zelenskyy', '泽连斯基', '泽连斯基',
-    'russia', 'russian', '俄罗斯', '俄国',
-    'putin', '普京',
-    'war', '战争', 'conflict', '冲突'
+    'zelensky', 'zelenskyy', '泽连斯基'
 ]
 
 # 分类与 RSS 列表（全球媒体的国际新闻版块）
