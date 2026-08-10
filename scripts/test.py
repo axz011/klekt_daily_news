@@ -608,7 +608,7 @@ def build_email_body(items: List[Dict]) -> str:
                 pass
         
         lines.extend([
-            f"【{i}】,
+            f"【{i}】",
             f"🏷️ 来源: {source_display}",
             f"🕐 {format_bjt(item['published'])}",
             f"⭐ 重要性: {item['importance']:.1f}/10.0",
