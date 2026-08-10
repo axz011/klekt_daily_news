@@ -66,15 +66,16 @@ BJT = pytz.timezone("Asia/Shanghai")
 # 分类与 RSS 列表
 FEEDS = {
     "经济": [
-        "https://feeds.bbci.co.uk/news/business/rss.xml",
-        "https://www.ft.com/?format=rss",
+        "https://feeds.bbci.co.uk/news/business/rss.xml",        
         "https://www.economist.com/finance-and-economics/rss.xml",
+        "https://feeds.bloomberg.com/markets/news.rss",
         # CNBC Business
         "https://www.cnbc.com/id/10001147/device/rss/rss.html",
         # CNBC Finance
         "https://www.cnbc.com/id/10000664/device/rss/rss.html",
         # CNBC Investing
-        "https://www.cnbc.com/id/15839135/device/rss/rss.html"
+        "https://www.cnbc.com/id/15839135/device/rss/rss.html",
+        "https://www.ft.com/?format=rss"
     ]
 }
 
@@ -547,7 +548,7 @@ def collect_top_items(limit: int = 20, max_per_feed: int = 6) -> List[Dict]:
                     "source": entry['source'],
                 })
                 
-                if temp_a >= 4:
+                if temp_a >= 3:
                     break
             
             if len(all_items) >= limit:
