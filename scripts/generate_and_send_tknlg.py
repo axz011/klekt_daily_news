@@ -332,7 +332,7 @@ def collect_top_items(limit=20):
         it['importance'] = compute_importance(it)
 
     # 首先按发布时间（published）降序，再按重要性（importance）降序
-    # items.sort(key=lambda x: (x.get('published') or datetime.min, x.get('importance', 0)), reverse=True)
+    items.sort(key=lambda x: (x.get('published') or datetime.min, x.get('importance', 0)), reverse=True)
     return items[:limit]
     
 
