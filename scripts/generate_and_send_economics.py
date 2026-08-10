@@ -34,49 +34,12 @@ BJT = pytz.timezone("Asia/Shanghai")
 
 # 分类与 RSS 列表（可以按需增删）
 FEEDS = {
-    # "Iran/伊朗": [
-    #     "https://feeds.reuters.com/Reuters/worldNews",
-    #     "https://www.bbc.co.uk/zhongwen/simp/index.xml",  # BBC 中文（部分中文）
-    #     "https://www.aljazeera.com/xml/rss/all.xml",
-    #     "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
-    # ],
-    # "Ukraine/乌克兰": [
-    #     "https://feeds.reuters.com/Reuters/worldNews",
-    #     "https://www.bbc.co.uk/zhongwen/simp/index.xml",  # BBC 中文（部分中文）
-    #     "https://www.aljazeera.com/xml/rss/all.xml",
-    #     "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
-    # ],
     "economics/经济": [      
         "https://feeds.reuters.com/reuters/businessNews",
         "https://www.ft.com/?format=rss",
         "https://rss.cnn.com/rss/money_news_international.rss"
         "https://www.bbc.co.uk/zhongwen/simp/index.xml", # BBC 中文（部分中文）
-    ],
-    # "AI/人工智能": [
-    #     "https://techcrunch.com/feed/",
-    #     "https://www.technologyreview.com/feed/",
-    #     "https://www.wired.com/feed/category/gear/latest/rss"
-    # ],
-    # "机器人": [
-    #     "https://spectrum.ieee.org/rss/fulltext/robotics",
-    #     "https://roboticsbusinessreview.com/feed/"
-    # ],
-    # "脑机接口": [
-    #     "https://www.nature.com/subjects/brain-computer-interface.rss",
-    #     "https://www.sciencedaily.com/rss/mind_brain.xml"
-    # ],
-    # "基础科学": [
-    #     "https://www.sciencedaily.com/rss/top/science.xml",
-    #     "https://www.nature.com/nature/articles?type=research&format=rss"
-    # ],
-    # "心理学/社会学": [
-    #     "https://www.sciencedaily.com/rss/mind_behavior.xml",
-    #     "https://www.psychologytoday.com/us/rss"
-    # ],
-    # "信息工程": [
-    #     "https://www.usenix.org/feed",
-    #     "https://www.infoq.com/feed/"
-    # ]
+    ]  
 }
 
 # SMTP & env
@@ -409,7 +372,7 @@ def send_email(subject, body_plain):
 
 
 def main():
-    items = collect_top_items(limit=20)
+    items = collect_top_items(limit=10)
     if not items:
         print("未获取到新闻：RSS 源可能暂时不可用或网络问题。")
     body = build_email_body(items)
