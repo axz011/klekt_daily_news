@@ -344,7 +344,7 @@ def build_email_body(items):
         else:
             title_en_display = title_en
 
-        lines.append(f"{i})}")
+        lines.append(f"{i}")
         lines.append(f"   信息源：{it.get('source') or 'unknow'}")
         lines.append(f"   发布时间（北京时间）：{format_bjt(it.get('published'))}")
         # 显示重要性评分以便可解释排序
