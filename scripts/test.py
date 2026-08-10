@@ -458,7 +458,7 @@ def compute_importance(item: Dict) -> float:
     ]
     for s in high_sources:
         if s in source:
-            score += 5
+            score += 1
             break
     
     # 标题关键词
@@ -469,14 +469,14 @@ def compute_importance(item: Dict) -> float:
     ]
     for k in keywords:
         if k in title:
-            score += 4
+            score += 3
             break
     
     # 摘要长度
     if len(summary) > 200:
-        score += 1
+        score += 3
     elif len(summary) > 100:
-        score += 0.5
+        score += 1
     
     # 时间新鲜度（24小时内）
     try:
