@@ -38,12 +38,8 @@ FEEDS = {
         "https://feeds.reuters.com/reuters/businessNews",
         "https://rss.cnn.com/rss/money_news_international.rss"
         "https://feeds.bbci.co.uk/news/business/rss.xml",                        # BBC Business
-        "https://www.ft.com/?format=rss",                                        # Financial Times (RSS endpoint)
-        "https://www.imf.org/external/rss/index.xml",                            # IMF News / RSS
-        "https://www.worldbank.org/en/news/rss",                                 # World Bank - News RSS
+        "https://www.ft.com/?format=rss",                                        # Financial Times (RSS endpoint)        
         "https://www.economist.com/finance-and-economics/rss.xml",               # The Economist - Finance & Economics (常用 RSS)
-        "https://www.cnbc.com/id/100003114/device/rss/rss.xml",                  # CNBC - Top News / Markets (常见 RSS)
-        "https://finance.yahoo.com/rss"   
     ]  
 }
 
@@ -189,7 +185,7 @@ def compute_importance(item):
 
     # 来源权重（示例列表）
     high_sources = [
-        'reuters', 'nytimes', 'ft', 'financial times', 'bbc', 'aljazeera', 'cnn',
+        'reuters', 'ft', 'financial times', 'bbc', 'aljazeera', 'cnn',
         'techcrunch', 'wired', 'nature', 'sciencedaily'
     ]
     for s in high_sources:
@@ -274,9 +270,9 @@ def collect_top_items(limit=20):
                     "source": source_s
                 })
               
-                if temp_c >= 5:
+                if temp_c >= 6:
                     break
-            if len(items) >= limit + 10:
+            if len(items) >= limit:
                 break
             time.sleep(0.2)  # polite delay
         if len(items) >= limit:
