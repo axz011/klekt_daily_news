@@ -49,13 +49,11 @@ UKRAINE_KEYWORDS = [
 # 分类与 RSS 列表（全球媒体的国际新闻版块）
 FEEDS = {
     "Iran/伊朗": [
-        "https://feeds.reuters.com/Reuters/worldNews",
         "https://www.aljazeera.com/xml/rss/all.xml",
         "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
         "https://feeds.bloomberg.com/markets/news.rss"
     ],
     "Ukraine/乌克兰": [
-        "https://feeds.reuters.com/Reuters/worldNews",
         "https://www.aljazeera.com/xml/rss/all.xml",
         "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
         "https://feeds.bloomberg.com/markets/news.rss"
@@ -349,7 +347,7 @@ def collect_top_items(limit=20):
                     "source": source_s,
                     "description": summary
                 })
-                if temp_a >= 2:
+                if temp_a >= 5:
                     break
             if len(items) >= limit:
                 break
