@@ -1,7 +1,4 @@
 """
-经济新闻
-"""
-"""
 RSS-based daily news generator + SMTP sender.
 - 从多个主流媒体 RSS 抓取不同类目的新闻（无需 API key）
 - 输出最多 20 条，按新闻重要性排序并通过 SMTP 发邮件
@@ -23,6 +20,7 @@ import time
 import re
 import logging
 from typing import List, Dict, Optional, Tuple
+from urllib.parse import urlparse
 
 # 设置日志
 logging.basicConfig(
@@ -71,10 +69,10 @@ FEEDS = {
         "https://feeds.bbci.co.uk/news/business/rss.xml",
         "https://www.ft.com/?format=rss",
         "https://www.economist.com/finance-and-economics/rss.xml",
-          # CNBC Business
-        "https://www.cnbc.com/id/10001147/device/rss/rss.html",    
+        # CNBC Business
+        "https://www.cnbc.com/id/10001147/device/rss/rss.html",
         # CNBC Finance
-        "https://www.cnbc.com/id/10000664/device/rss/rss.html",    
+        "https://www.cnbc.com/id/10000664/device/rss/rss.html",
         # CNBC Investing
         "https://www.cnbc.com/id/15839135/device/rss/rss.html"
     ]
@@ -255,6 +253,35 @@ def translate_text(text: str, target_lang: str = 'zh') -> str:
     return text
 
 
+def clean_html(text: str) -> str:
+    """清理 HTML 标签，提取纯文本"""
+    if not text:
+        return ""
+    
+    # 移除 style 标签及其内容
+    text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    # 移除 script 标签及其内容
+    text = re.sub(r'<script[^>]*>.*?</script>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    # 移除 HTML 注释
+    text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
+    # 移除其他 HTML 标签
+    text = re.sub(r'<[^>]+>', '', text)
+    # 解码 HTML 实体
+    text = text.replace('&nbsp;', ' ')
+    text = text.replace('&amp;', '&')
+    text = text.replace('&lt;', '<')
+    text = text.replace('&gt;', '>')
+    text = text.replace('&quot;', '"')
+    text = text.replace('&#39;', "'")
+    text = text.replace('&ldquo;', '"')
+    text = text.replace('&rdquo;', '"')
+    # 清理多余的空白
+    text = re.sub(r'\s+', ' ', text)
+    text = text.strip()
+    
+    return text
+
+
 def parse_time(entry) -> datetime:
     """解析 RSS 条目的发布时间"""
     try:
@@ -279,6 +306,101 @@ def parse_time(entry) -> datetime:
     return datetime.now(pytz.UTC)
 
 
+def extract_source(entry, feed_url: str = "") -> str:
+    """从 RSS 条目中提取来源信息"""
+    source = ""
+    
+    # 方法1: 检查 entry.source (标准 RSS 来源字段)
+    if hasattr(entry, "source") and entry.source:
+        if isinstance(entry.source, dict):
+            source = entry.source.get("title", "")
+        else:
+            source = str(entry.source)
+        if source:
+            return source
+    
+    # 方法2: 检查 entry.author
+    if hasattr(entry, "author") and entry.author:
+        source = entry.author
+        if source:
+            return source
+    
+    # 方法3: 检查 entry.publisher
+    if hasattr(entry, "publisher") and entry.publisher:
+        if isinstance(entry.publisher, dict):
+            source = entry.publisher.get("title", "")
+        else:
+            source = str(entry.publisher)
+        if source:
+            return source
+    
+    # 方法4: 检查 entry.creator (Dublin Core)
+    if hasattr(entry, "creator") and entry.creator:
+        if isinstance(entry.creator, list):
+            source = ", ".join(entry.creator)
+        else:
+            source = str(entry.creator)
+        if source:
+            return source
+    
+    # 方法5: 检查 entry.media_credit (媒体来源)
+    if hasattr(entry, "media_credit") and entry.media_credit:
+        if isinstance(entry.media_credit, list):
+            source = entry.media_credit[0].get("content", "")
+        else:
+            source = entry.media_credit.get("content", "")
+        if source:
+            return source
+    
+    # 方法6: 从 URL 提取域名作为来源
+    if feed_url:
+        try:
+            parsed = urlparse(feed_url)
+            domain = parsed.netloc
+            # 移除 www. 前缀
+            domain = re.sub(r'^www\.', '', domain)
+            # 提取主域名
+            parts = domain.split('.')
+            if len(parts) >= 2:
+                # 对于像 bbc.co.uk 这样的域名
+                if len(parts) >= 3 and len(parts[-2]) <= 3:
+                    source = parts[-3]
+                else:
+                    source = parts[-2]
+                source = source.capitalize()
+                return source
+        except Exception:
+            pass
+    
+    # 方法7: 从链接中提取域名
+    if hasattr(entry, "link") and entry.link:
+        try:
+            parsed = urlparse(entry.link)
+            domain = parsed.netloc
+            domain = re.sub(r'^www\.', '', domain)
+            parts = domain.split('.')
+            if len(parts) >= 2:
+                if len(parts) >= 3 and len(parts[-2]) <= 3:
+                    source = parts[-3]
+                else:
+                    source = parts[-2]
+                source = source.capitalize()
+                return source
+        except Exception:
+            pass
+    
+    # 方法8: 检查 title 中的来源信息（某些 RSS 会在标题中包含来源）
+    if hasattr(entry, "title") and entry.title:
+        # 尝试匹配 "Source: XXX" 模式
+        match = re.search(r'(?:Source|来源)[:：]\s*([^|,，]+)', entry.title, re.I)
+        if match:
+            source = match.group(1).strip()
+            return source
+    
+    # 如果所有方法都失败，返回 "Unknown"
+    return "Unknown"
+
+
 def fetch_from_feed(url: str, max_items: int = 10) -> List[Dict]:
     """从 RSS 源获取条目"""
     try:
@@ -295,24 +417,21 @@ def fetch_from_feed(url: str, max_items: int = 10) -> List[Dict]:
                 continue
             
             title = entry.get("title", "").strip()
-            summary = (entry.get("summary") or entry.get("description") or "")[:800]
+            # 获取原始摘要并清理 HTML
+            raw_summary = (entry.get("summary") or entry.get("description") or "")
+            summary = clean_html(raw_summary)
+            
             published = parse_time(entry)
             
-            # 获取来源
-            source = ""
-            if hasattr(entry, "source") and entry.source:
-                source = entry.source.get("title", "")
-            elif "author" in entry:
-                source = entry.author
-            elif "publisher" in entry:
-                source = entry.publisher
+            # 提取来源，传入 feed_url 作为备用
+            source = extract_source(entry, url)
             
             entries.append({
                 "title": title,
                 "summary": summary,
                 "url": link,
                 "published": published,
-                "source": source or "Unknown",
+                "source": source,
             })
         
         logger.info(f"从 {url} 获取到 {len(entries)} 条新闻")
@@ -329,12 +448,13 @@ def compute_importance(item: Dict) -> float:
     
     title = item.get('title_en', '').lower()
     source = item.get('source', '').lower()
-    summary = item.get('summary', '')
+    summary = item.get('summary_en', '') or item.get('summary_zh', '')
     
     # 来源权重
     high_sources = [
         'reuters', 'ft', 'financial times', 'bbc', 'cnn',
-        'bloomberg', 'wsj', 'wall street journal', 'ap', 'associated press'
+        'bloomberg', 'wsj', 'wall street journal', 'ap', 'associated press',
+        'economist', 'techcrunch', 'wired', 'nytimes', 'medicalnewstoday'
     ]
     for s in high_sources:
         if s in source:
@@ -385,8 +505,10 @@ def collect_top_items(limit: int = 20, max_per_feed: int = 6) -> List[Dict]:
         
         for feed_url in feeds:
             entries = fetch_from_feed(feed_url, max_per_feed)
-            
+
+            temp_a = 0
             for entry in entries:
+                temp_a = temp_a + 1
                 url = entry['url']
                 if url in seen_urls:
                     continue
@@ -422,10 +544,10 @@ def collect_top_items(limit: int = 20, max_per_feed: int = 6) -> List[Dict]:
                     "summary_en": summary_en,
                     "url": url,
                     "published": entry['published'],
-                    "source": to_simplified(entry['source']),
+                    "source": entry['source'],
                 })
                 
-                if len(all_items) >= limit:
+                if temp_a >= 6:
                     break
             
             if len(all_items) >= limit:
@@ -467,6 +589,23 @@ def build_email_body(items: List[Dict]) -> str:
     ]
     
     for i, item in enumerate(items, 1):
+        # 确保来源显示正确
+        source_display = item.get('source', 'Unknown')
+        if source_display == "Unknown" and item.get('url'):
+            # 如果来源仍然是 Unknown，尝试从 URL 提取
+            try:
+                parsed = urlparse(item['url'])
+                domain = parsed.netloc
+                domain = re.sub(r'^www\.', '', domain)
+                parts = domain.split('.')
+                if len(parts) >= 2:
+                    if len(parts) >= 3 and len(parts[-2]) <= 3:
+                        source_display = parts[-3].capitalize()
+                    else:
+                        source_display = parts[-2].capitalize()
+            except Exception:
+                pass
+        
         lines.extend([
             f"【{i}】{item['category']}",
             f"🕐 {format_bjt(item['published'])}",
@@ -480,7 +619,7 @@ def build_email_body(items: List[Dict]) -> str:
             f"📝 摘要 (英文):",
             f"{item['summary_en'][:300]}..." if len(item['summary_en']) > 300 else f"{item['summary_en']}",
             "",
-            f"🏷️ 来源: {item['source']}",
+            f"🏷️ 来源: {source_display}",
             f"🔗 链接: {item['url']}",
             "-" * 40,
             ""
