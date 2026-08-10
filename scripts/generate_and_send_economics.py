@@ -42,8 +42,8 @@ FEEDS = {
         # CNBC Investing
         "https://www.cnbc.com/id/15839135/device/rss/rss.html",
         "https://feeds.bbci.co.uk/news/business/rss.xml",                        # BBC Business
-        "https://www.ft.com/?format=rss",                                        # Financial Times (RSS endpoint)        
-        "https://www.economist.com/finance-and-economics/rss.xml"               # The Economist - Finance & Economics (常用 RSS)
+        "https://www.economist.com/finance-and-economics/rss.xml",               # The Economist - Finance & Economics (常用 RSS)
+        "https://www.ft.com/?format=rss"                                         # Financial Times (RSS endpoint)      
     ]  
 }
 
@@ -194,25 +194,25 @@ def compute_importance(item):
     ]
     for s in high_sources:
         if s in source:
-            score += 5
+            score += 3
             break
 
     # 标题关键词
     keywords = ['breaking', 'breaking news', 'exclusive', 'urgent', 'alert', '重大', '突发', '独家', '警报', '危机']
     for k in keywords:
         if k in title:
-            score += 4
+            score += 3
             break
 
     # 摘要长度指示信息量
     if len(desc) > 200:
-        score += 1
+        score += 2
 
     # 最近 24 小时略加分
     try:
         pub = item.get('published')
         if pub and (datetime.now(pytz.UTC) - pub).total_seconds() < 86400:
-            score += 1
+            score += 2
     except Exception:
         pass
 
@@ -274,7 +274,7 @@ def collect_top_items(limit=20):
                     "source": source_s
                 })
               
-                if temp_c >= 6:
+                if temp_c >= 4:
                     break
             if len(items) >= limit:
                 break
