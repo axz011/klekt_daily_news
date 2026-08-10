@@ -547,7 +547,7 @@ def collect_top_items(limit: int = 20, max_per_feed: int = 6) -> List[Dict]:
                     "source": entry['source'],
                 })
                 
-                if temp_a >= 6:
+                if temp_a >= 4:
                     break
             
             if len(all_items) >= limit:
@@ -607,7 +607,8 @@ def build_email_body(items: List[Dict]) -> str:
                 pass
         
         lines.extend([
-            f"【{i}】{item['category']}",
+            f"【{i}】
+            f"🏷️ 来源: {source_display}",
             f"🕐 {format_bjt(item['published'])}",
             f"⭐ 重要性: {item['importance']:.1f}/10.0",
             f"📌 标题 (中文): {item['title_zh']}",
@@ -619,7 +620,6 @@ def build_email_body(items: List[Dict]) -> str:
             f"📝 摘要 (英文):",
             f"{item['summary_en'][:300]}..." if len(item['summary_en']) > 300 else f"{item['summary_en']}",
             "",
-            f"🏷️ 来源: {source_display}",
             f"🔗 链接: {item['url']}",
             "-" * 40,
             ""
