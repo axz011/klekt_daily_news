@@ -35,14 +35,15 @@ BJT = pytz.timezone("Asia/Shanghai")
 # 分类与 RSS 列表（可以按需增删）
 FEEDS = {
     "economics/经济": [      
+        "https://feeds.bbci.co.uk/news/business/rss.xml",                        # BBC Business
+        "https://www.economist.com/finance-and-economics/rss.xml",               # The Economist - Finance & Economics (常用 RSS)
+        "https://feeds.bloomberg.com/markets/news.rss",
         # CNBC Business
         "https://www.cnbc.com/id/10001147/device/rss/rss.html",
         # CNBC Finance
         "https://www.cnbc.com/id/10000664/device/rss/rss.html",
         # CNBC Investing
         "https://www.cnbc.com/id/15839135/device/rss/rss.html",
-        "https://feeds.bbci.co.uk/news/business/rss.xml",                        # BBC Business
-        "https://www.economist.com/finance-and-economics/rss.xml",               # The Economist - Finance & Economics (常用 RSS)
         "https://www.ft.com/?format=rss"                                         # Financial Times (RSS endpoint)      
     ]  
 }
@@ -274,7 +275,7 @@ def collect_top_items(limit=20):
                     "source": source_s
                 })
               
-                if temp_c >= 4:
+                if temp_c >= 3:
                     break
             if len(items) >= limit:
                 break
@@ -343,7 +344,8 @@ def build_email_body(items):
         else:
             title_en_display = title_en
 
-        lines.append(f"{i}. 类目：{to_simplified(it['category'])}")
+        lines.append(f"{i})}")
+        lines.append(f"   信息源：{it.get('source') or 'unknow'}")
         lines.append(f"   发布时间（北京时间）：{format_bjt(it.get('published'))}")
         # 显示重要性评分以便可解释排序
         lines.append(f"   重要性评分：{it.get('importance', 0):.1f}")
@@ -351,8 +353,7 @@ def build_email_body(items):
         lines.append(f"   标题（中/英）：{(title_zh or '—')} / {(title_en_display or '—')}")
         # 内容摘要：中文 / 英文
         lines.append(f"   内容摘要（中）：{it.get('summary_zh','')}")
-        lines.append(f"   内容摘要（英）：{it.get('summary_en','')}")
-        lines.append(f"   信息源：{it.get('source') or 'RSS'}")
+        lines.append(f"   内容摘要（英）：{it.get('summary_en','')}")        
         lines.append(f"   原文链接：{url}\n")
     return "\n".join(lines)
 
