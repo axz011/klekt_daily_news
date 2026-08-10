@@ -27,6 +27,7 @@ import requests
 import time
 import re
 import subprocess
+import html as _html
 
 # deep-translator for backup translation
 try:
@@ -111,6 +112,28 @@ def to_simplified(text):
 
 def contains_cjk(text):
     return bool(re.search('[\u4e00-\u9fff]', text or ''))
+
+
+def html_to_text(html_text):
+    """Convert HTML content to plain text: remove scripts/styles, strip tags, unescape entities, collapse whitespace."""
+    if not html_text:
+        return html_text
+    try:
+        s = str(html_text)
+        # remove script/style blocks
+        s = re.sub(r'(?is)<(script|style).*?>.*?</\\1>', ' ', s)
+        # remove all HTML tags
+        s = re.sub(r'<[^>]+>', ' ', s)
+        # unescape HTML entities
+        s = _html.unescape(s)
+        # collapse whitespace
+        s = re.sub(r'\s+', ' ', s).strip()
+        return s
+    except Exception:
+        try:
+            return _html.unescape(str(html_text))
+        except Exception:
+            return str(html_text)
 
 
 def translate(text):
@@ -249,7 +272,11 @@ def collect_top_items(limit=20):
                     continue
                 seen.add(link)
                 title = e.get("title", "").strip()
+                # sanitize title (remove HTML tags/entities)
+                title = html_to_text(title)
                 summary = (e.get("summary") or e.get("description") or "")[:800]
+                # sanitize summary to plain text
+                summary = html_to_text(summary)
                 published = parse_time(e)
                 source = e.get("source", {}).get("title") if e.get("source") else e.get("author") or ""
 
@@ -274,6 +301,10 @@ def collect_top_items(limit=20):
                     # 摘要是英文，生成中文版本
                     summary_en = summary_raw
                     summary_zh = to_simplified(translate(summary_raw))
+
+                # sanitize final summaries (in case translation/other steps introduced HTML/entities)
+                summary_en = html_to_text(summary_en)
+                summary_zh = html_to_text(summary_zh)
 
                 # 把来源也转换为简体，便于邮件展示
                 source_s = to_simplified(source)
@@ -304,6 +335,7 @@ def collect_top_items(limit=20):
     # items.sort(key=lambda x: (x.get('published') or datetime.min, x.get('importance', 0)), reverse=True)
     return items[:limit]
     
+
 
 def format_bjt(dt):
     if not dt:
