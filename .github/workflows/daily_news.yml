@@ -37,3 +37,4 @@ jobs:
           # python scripts/generate_and_send_tknlg.py
           # python scripts/generate_and_send_politics.py
           python scripts/generate_and_send_economics.py
+          python scripts/test.py
