@@ -9,7 +9,7 @@
 """
 RSS-based daily news generator + SMTP sender.
 - 从多个主流媒体 RSS 抓取不同类目的新闻（无需 API key）
-- 输出最多 20 条，按新闻重要性排序并通过 SMTP 发邮件
+- 输出最多 10 条，按新闻重要性排序并通过 SMTP 发邮件
 - 重要性用简单启发式评分计算（来源权重、标题关键词、摘要长度、发布时间）
 环境变量：
   SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, EMAIL_FROM, EMAIL_TO
@@ -299,9 +299,9 @@ def collect_top_items(limit=20):
         it['importance'] = compute_importance(it)
 
     # 首先按发布时间（published）降序，再按重要性（importance）降序
-    items.sort(key=lambda x: (x.get('published') or datetime.min, x.get('importance', 0)), reverse=True)
+    # items.sort(key=lambda x: (x.get('published') or datetime.min, x.get('importance', 0)), reverse=True)
     return items[:limit]
-
+    
 
 def format_bjt(dt):
     if not dt:
@@ -393,7 +393,7 @@ def send_email(subject, body_plain):
 
 
 def main():
-    items = collect_top_items(limit=20)
+    items = collect_top_items(limit=10)
     if not items:
         print("未获取到新闻：RSS 源可能暂时不可用或网络问题。")
     body = build_email_body(items)
