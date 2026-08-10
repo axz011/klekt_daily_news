@@ -209,25 +209,25 @@ def compute_importance(item):
     ]
     for s in high_sources:
         if s in source:
-            score += 5
+            score += 3
             break
 
     # 标题关键词
     keywords = ['breaking', 'breaking news', 'exclusive', 'urgent', 'alert', '重大', '突发', '独家', '警报', '危机']
     for k in keywords:
         if k in title:
-            score += 4
+            score += 3
             break
 
     # 摘要长度指示信息量
     if len(desc) > 200:
-        score += 1
+        score += 2
 
     # 最近 24 小时略加分
     try:
         pub = item.get('published')
         if pub and (datetime.now(pytz.UTC) - pub).total_seconds() < 86400:
-            score += 1
+            score += 2
     except Exception:
         pass
 
@@ -395,7 +395,7 @@ def send_email(subject, body_plain):
 
 
 def main():
-    items = collect_top_items(limit=10)
+    items = collect_top_items(limit=20)
     if not items:
         print("未获取到新闻：RSS 源可能暂时不可用或网络问题。")
     body = build_email_body(items)
