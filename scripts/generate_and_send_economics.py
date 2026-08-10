@@ -36,9 +36,7 @@ BJT = pytz.timezone("Asia/Shanghai")
 FEEDS = {
     "economics/经济": [      
         "https://feeds.reuters.com/reuters/businessNews",
-        "https://www.ft.com/?format=rss",
         "https://rss.cnn.com/rss/money_news_international.rss"
-        "https://www.bbc.co.uk/zhongwen/simp/index.xml", # BBC 中文（部分中文）
     ]  
 }
 
