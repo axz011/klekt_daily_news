@@ -453,7 +453,7 @@ def send_email(subject, body_plain):
 
 
 def main():
-    items = collect_top_items(limit=20)
+    items = collect_top_items(limit=10)
     if not items:
         print("未获取到新闻：RSS 源可能暂时不可用或网络问题，或无伊朗/乌克兰相关新闻。")
     body = build_email_body(items)
