@@ -36,7 +36,7 @@ BJT = pytz.timezone("Asia/Shanghai")
 FEEDS = {
     "economics/经济": [      
         "https://feeds.reuters.com/reuters/businessNews",
-        "https://rss.cnn.com/rss/money_news_international.rss"
+        "https://rss.cnn.com/rss/money_news_international.rss",
         "https://feeds.bbci.co.uk/news/business/rss.xml",                        # BBC Business
         "https://www.ft.com/?format=rss",                                        # Financial Times (RSS endpoint)        
         "https://www.economist.com/finance-and-economics/rss.xml",               # The Economist - Finance & Economics (常用 RSS)
