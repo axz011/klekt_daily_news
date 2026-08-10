@@ -38,9 +38,6 @@ FEEDS = {
         "https://feeds.reuters.com/reuters/businessNews",
         "https://rss.cnn.com/rss/money_news_international.rss"
         "https://feeds.bbci.co.uk/news/business/rss.xml",                        # BBC Business
-        "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",             # NYTimes Business
-        "https://www.theguardian.com/business/rss",                              # The Guardian - Business
-        "https://www.marketwatch.com/rss/topstories",                            # MarketWatch Top Stories
         "https://www.ft.com/?format=rss",                                        # Financial Times (RSS endpoint)
         "https://www.imf.org/external/rss/index.xml",                            # IMF News / RSS
         "https://www.worldbank.org/en/news/rss",                                 # World Bank - News RSS
@@ -227,12 +224,8 @@ def collect_top_items(limit=20):
     seen = set()
     # iterate categories round-robin to balance categories
     for category, feeds in FEEDS.items():
-
-        temp_b = 0
         for feed in feeds:
-            temp_b = temp_b + 1
             entries = fetch_from_feed(feed)
-
             temp_c = 0
             for e in entries:
                 temp_c = temp_c + 1
@@ -280,9 +273,10 @@ def collect_top_items(limit=20):
                     "published": published,
                     "source": source_s
                 })
+              
                 if temp_c >= 5:
                     break
-            if temp_b >= 5:
+            if len(items) >= limit + 10:
                 break
             time.sleep(0.2)  # polite delay
         if len(items) >= limit:
