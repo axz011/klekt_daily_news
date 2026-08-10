@@ -35,11 +35,15 @@ BJT = pytz.timezone("Asia/Shanghai")
 # 分类与 RSS 列表（可以按需增删）
 FEEDS = {
     "economics/经济": [      
-        "https://feeds.reuters.com/reuters/businessNews",
-        "https://rss.cnn.com/rss/money_news_international.rss",
+        # CNBC Business
+        "https://www.cnbc.com/id/10001147/device/rss/rss.html",
+        # CNBC Finance
+        "https://www.cnbc.com/id/10000664/device/rss/rss.html",
+        # CNBC Investing
+        "https://www.cnbc.com/id/15839135/device/rss/rss.html",
         "https://feeds.bbci.co.uk/news/business/rss.xml",                        # BBC Business
         "https://www.ft.com/?format=rss",                                        # Financial Times (RSS endpoint)        
-        "https://www.economist.com/finance-and-economics/rss.xml",               # The Economist - Finance & Economics (常用 RSS)
+        "https://www.economist.com/finance-and-economics/rss.xml"               # The Economist - Finance & Economics (常用 RSS)
     ]  
 }
 
