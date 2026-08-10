@@ -4,7 +4,7 @@
 """
 RSS-based daily news generator + SMTP sender.
 - 从多个主流媒体 RSS 抓取不同类目的新闻（无需 API key）
-- 输出最多 10 条，按新闻重要性排序并通过 SMTP 发邮件
+- 输出最多 20 条，按新闻重要性排序并通过 SMTP 发邮件
 - 重要性用简单启发式评分计算（来源权重、标题关键词、摘要长度、发布时间）
 环境变量：
   SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, EMAIL_FROM, EMAIL_TO
@@ -37,6 +37,16 @@ FEEDS = {
     "economics/经济": [      
         "https://feeds.reuters.com/reuters/businessNews",
         "https://rss.cnn.com/rss/money_news_international.rss"
+        "https://feeds.bbci.co.uk/news/business/rss.xml",                        # BBC Business
+        "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",             # NYTimes Business
+        "https://www.theguardian.com/business/rss",                              # The Guardian - Business
+        "https://www.marketwatch.com/rss/topstories",                            # MarketWatch Top Stories
+        "https://www.ft.com/?format=rss",                                        # Financial Times (RSS endpoint)
+        "https://www.imf.org/external/rss/index.xml",                            # IMF News / RSS
+        "https://www.worldbank.org/en/news/rss",                                 # World Bank - News RSS
+        "https://www.economist.com/finance-and-economics/rss.xml",               # The Economist - Finance & Economics (常用 RSS)
+        "https://www.cnbc.com/id/100003114/device/rss/rss.xml",                  # CNBC - Top News / Markets (常见 RSS)
+        "https://finance.yahoo.com/rss"   
     ]  
 }
 
@@ -217,9 +227,15 @@ def collect_top_items(limit=20):
     seen = set()
     # iterate categories round-robin to balance categories
     for category, feeds in FEEDS.items():
+
+        temp_b = 0
         for feed in feeds:
+            temp_b = temp_b + 1
             entries = fetch_from_feed(feed)
+
+            temp_c = 0
             for e in entries:
+                temp_c = temp_c + 1
                 link = e.get("link") or e.get("id")
                 if not link or link in seen:
                     continue
@@ -264,9 +280,9 @@ def collect_top_items(limit=20):
                     "published": published,
                     "source": source_s
                 })
-                if len(items) >= limit:
+                if temp_c >= 5:
                     break
-            if len(items) >= 5:
+            if temp_b >= 5:
                 break
             time.sleep(0.2)  # polite delay
         if len(items) >= limit:
@@ -370,7 +386,7 @@ def send_email(subject, body_plain):
 
 
 def main():
-    items = collect_top_items(limit=10)
+    items = collect_top_items(limit=20)
     if not items:
         print("未获取到新闻：RSS 源可能暂时不可用或网络问题。")
     body = build_email_body(items)
