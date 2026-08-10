@@ -34,6 +34,6 @@ jobs:
           TRANSLATE_API_URL: ${{ secrets.TRANSLATE_API_URL }}
           TRANSLATE_API_KEY: ${{ secrets.TRANSLATE_API_KEY }}
         run: |
-          python scripts/generate_and_send.py
+          python scripts/generate_and_send_tknlg.py
           python scripts/generate_and_send_politics.py
           python scripts/generate_and_send_economics.py
