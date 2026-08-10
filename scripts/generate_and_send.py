@@ -38,18 +38,7 @@ except Exception:
 BJT = pytz.timezone("Asia/Shanghai")
 
 # 分类与 RSS 列表（可以按需增删）
-FEEDS = {
-    # "政治": [
-    #     "https://feeds.reuters.com/Reuters/worldNews",
-    #     "https://www.bbc.co.uk/zhongwen/simp/index.xml",  # BBC 中文（部分中文）
-    #     "https://www.aljazeera.com/xml/rss/all.xml",
-    #     "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
-    # ],
-    # "经济": [
-    #     "https://feeds.reuters.com/reuters/businessNews",
-    #     "https://www.ft.com/?format=rss",
-    #     "https://rss.cnn.com/rss/money_news_international.rss"
-    # ],
+FEEDS = {    
     "AI/人工智能": [
         "https://techcrunch.com/feed/",
         "https://www.technologyreview.com/feed/",
@@ -67,10 +56,6 @@ FEEDS = {
         "https://www.sciencedaily.com/rss/top/science.xml",
         "https://www.nature.com/nature/articles?type=research&format=rss"
     ],
-    # "心理学/社会学": [
-    #     "https://www.sciencedaily.com/rss/mind_behavior.xml",
-    #     "https://www.psychologytoday.com/us/rss"
-    # ],
     "IE/信息工程": [
         "https://www.usenix.org/feed",
         "https://www.infoq.com/feed/"
