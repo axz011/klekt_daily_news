@@ -245,25 +245,25 @@ def compute_importance(item):
     ]
     for s in high_sources:
         if s in source:
-            score += 5
+            score += 3
             break
 
     # 标题关键词
     keywords = ['breaking', 'breaking news', 'exclusive', 'urgent', 'alert', '重大', '突发', '独家', '警报', '危机']
     for k in keywords:
         if k in title:
-            score += 4
+            score += 3
             break
 
     # 摘要长度指示信息量
     if len(desc) > 200:
-        score += 1
+        score += 2
 
     # 最近 24 小时略加分
     try:
         pub = item.get('published')
         if pub and (datetime.now(pytz.UTC) - pub).total_seconds() < 86400:
-            score += 1
+            score += 2
     except Exception:
         pass
 
@@ -277,7 +277,9 @@ def collect_top_items(limit=20):
     for category, feeds in FEEDS.items():
         for feed in feeds:
             entries = fetch_from_feed(feed)
+            temp_a = 0
             for e in entries:
+                temp_a = temp_a + 1
                 link = e.get("link") or e.get("id")
                 if not link or link in seen:
                     continue
@@ -347,7 +349,7 @@ def collect_top_items(limit=20):
                     "source": source_s,
                     "description": summary
                 })
-                if len(items) >= limit:
+                if temp_a >= 2:
                     break
             if len(items) >= limit:
                 break
@@ -453,7 +455,7 @@ def send_email(subject, body_plain):
 
 
 def main():
-    items = collect_top_items(limit=10)
+    items = collect_top_items(limit=20)
     if not items:
         print("未获取到新闻：RSS 源可能暂时不可用或网络问题，或无伊朗/乌克兰相关新闻。")
     body = build_email_body(items)
