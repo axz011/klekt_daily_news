@@ -241,7 +241,9 @@ def collect_top_items(limit=20):
     for category, feeds in FEEDS.items():
         for feed in feeds:
             entries = fetch_from_feed(feed)
+            temp_a = 0
             for e in entries:
+                temp_a = temp_a + 1
                 link = e.get("link") or e.get("id")
                 if not link or link in seen:
                     continue
@@ -286,7 +288,7 @@ def collect_top_items(limit=20):
                     "published": published,
                     "source": source_s
                 })
-                if len(items) >= limit:
+                if temp_a >= 2:
                     break
             if len(items) >= limit:
                 break
