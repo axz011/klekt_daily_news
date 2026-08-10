@@ -1,4 +1,7 @@
 """
+经济新闻
+"""
+"""
 RSS-based daily news generator + SMTP sender.
 - 从多个主流媒体 RSS 抓取不同类目的新闻（无需 API key）
 - 输出最多 20 条，按新闻重要性排序并通过 SMTP 发邮件
@@ -65,20 +68,15 @@ BJT = pytz.timezone("Asia/Shanghai")
 # 分类与 RSS 列表
 FEEDS = {
     "经济": [
-        "https://feeds.reuters.com/reuters/businessNews",
-        "https://rss.cnn.com/rss/money_news_international.rss",
         "https://feeds.bbci.co.uk/news/business/rss.xml",
         "https://www.ft.com/?format=rss",
         "https://www.economist.com/finance-and-economics/rss.xml",
-    ],
-    "科技": [
-        "https://feeds.feedburner.com/TechCrunch",
-        "https://www.wired.com/feed/rss",
-        "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
-    ],
-    "健康": [
-        "https://www.medicalnewstoday.com/feed",
-        "https://www.sciencedaily.com/rss/health_medicine.xml",
+          # CNBC Business
+        "https://www.cnbc.com/id/10001147/device/rss/rss.html",    
+        # CNBC Finance
+        "https://www.cnbc.com/id/10000664/device/rss/rss.html",    
+        # CNBC Investing
+        "https://www.cnbc.com/id/15839135/device/rss/rss.html"
     ]
 }
 
