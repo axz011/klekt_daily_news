@@ -40,9 +40,6 @@ FEEDS = {
     "AI/人工智能": [
         "https://techcrunch.com/feed/",
         "https://www.technologyreview.com/feed/",
-        "https://www.wired.com/feed/category/gear/latest/rss"
-    ],
-    "Robotics/机器人": [
         "https://spectrum.ieee.org/rss/fulltext/robotics",
         "https://roboticsbusinessreview.com/feed/"
     ]
@@ -212,8 +209,8 @@ def compute_importance(item):
 
     # 来源权重（示例列表）
     high_sources = [
-        'reuters', 'nytimes', 'ft', 'financial times', 'bbc', 'aljazeera', 'cnn',
-        'techcrunch', 'wired', 'nature', 'sciencedaily'
+        'reuters', 'nytimes', 'financial times', 'bbc', 'aljazeera', 'cnn',
+        'techcrunch', 'nature', 'sciencedaily'
     ]
     for s in high_sources:
         if s in source:
