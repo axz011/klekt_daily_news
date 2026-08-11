@@ -416,7 +416,7 @@ def main():
     if not items:
         print("未获取到新闻：RSS 源可能暂时不可用或网络问题。")
     body = build_email_body(items)
-    subject = f"每日科技要闻 — {datetime.now(BJT).strftime('%Y-%m-%d')}"
+    subject = f"每日AI要闻 — {datetime.now(BJT).strftime('%Y-%m-%d')}"
     send_email(subject, body)
     print("处理完成（已发送或打印邮件内容）。")
 
