@@ -2,14 +2,11 @@
 每日科技要闻：
     AI/人工智能;
     Robotics/机器人;
-    BCI/脑机接口;
-    SB/基础科学
-    IE/信息工程
 """
 """
 RSS-based daily news generator + SMTP sender.
 - 从多个主流媒体 RSS 抓取不同类目的新闻（无需 API key）
-- 输出最多 10 条，按新闻重要性排序并通过 SMTP 发邮件
+- 输出最多 20 条，按新闻重要性排序并通过 SMTP 发邮件
 - 重要性用简单启发式评分计算（来源权重、标题关键词、摘要长度、发布时间）
 环境变量：
   SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, EMAIL_FROM, EMAIL_TO
@@ -48,18 +45,6 @@ FEEDS = {
     "Robotics/机器人": [
         "https://spectrum.ieee.org/rss/fulltext/robotics",
         "https://roboticsbusinessreview.com/feed/"
-    ],
-    "BCI/脑机接口": [
-        "https://www.nature.com/subjects/brain-computer-interface.rss",
-        "https://www.sciencedaily.com/rss/mind_brain.xml"
-    ],
-    "SB/基础科学": [
-        "https://www.sciencedaily.com/rss/top/science.xml",
-        "https://www.nature.com/nature/articles?type=research&format=rss"
-    ],
-    "IE/信息工程": [
-        "https://www.usenix.org/feed",
-        "https://www.infoq.com/feed/"
     ]
 }
 
@@ -319,7 +304,7 @@ def collect_top_items(limit=20):
                     "published": published,
                     "source": source_s
                 })
-                if temp_a >= 2:
+                if temp_a >= 5:
                     break
             if len(items) >= limit:
                 break
