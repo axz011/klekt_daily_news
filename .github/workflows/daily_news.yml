@@ -1,8 +1,8 @@
 name: Daily Klekt News
 on:
   schedule:
-    # Runs at 01:00 UTC every day -> 09:00 Asia/Shanghai (Beijing Time)
-    - cron: '0 1 * * *'
+    # Runs at 00:00 UTC every day -> 08:00 Asia/Shanghai (Beijing Time)
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
@@ -36,5 +36,5 @@ jobs:
         run: |
           python scripts/generate_and_send_AI.py
           python scripts/generate_and_send_politics.py
-          python scripts/generate_and_send_economics.py
+          # python scripts/generate_and_send_economics.py
           python scripts/test.py
