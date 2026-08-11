@@ -359,7 +359,7 @@ def collect_top_items(limit=20):
     for it in items:
         it['importance'] = compute_importance(it)
 
-    items.sort(key=lambda x: (x.get('importance', 0), x.get('published')), reverse=True)
+    items.sort(key=lambda x: (x.get('category'), x.get('importance', 0), x.get('published')), reverse=True)
     return items[:limit]
 
 
