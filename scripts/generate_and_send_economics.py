@@ -8,7 +8,7 @@ RSS-based daily news generator + SMTP sender.
 - 重要性用简单启发式评分计算（来源权重、标题关键词、摘要长度、发布时间）
 环境变量：
   SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, EMAIL_FROM, EMAIL_TO
-  TRANSLATE_API_URL, TRANSLATE_API_KEY (可选，用于翻译标题)
+  TRANSLATE_API_URL, TRANSLATE_API_KEY (可选，用于翻译标题)\n#   LIBRETRANSLATE_URL, LIBRETRANSLATE_API_KEY (可选，第三重免费备用翻译)
 """
 
 import os
@@ -23,11 +23,13 @@ import time
 import re
 import subprocess
 
-# deep-translator for backup translation
+# 免费翻译引擎：Google / MyMemory / LibreTranslate
+# 采用多引擎故障转移，避免某一个翻译服务偶发失败导致邮件中出现“没有对应的译文”。
 try:
-    from deep_translator import GoogleTranslator
+    from deep_translator import GoogleTranslator, MyMemoryTranslator, LibreTranslator
     _deep_translator_available = True
 except Exception:
+    GoogleTranslator = MyMemoryTranslator = LibreTranslator = None
     _deep_translator_available = False
 
 BJT = pytz.timezone("Asia/Shanghai")
@@ -99,52 +101,127 @@ def contains_cjk(text):
     return bool(re.search('[\u4e00-\u9fff]', text or ''))
 
 
-def translate(text):
-    # 如果标题已经包含中文，就不再调用翻译接口，直接使用原文（后续会统一转换为简体）
-    if contains_cjk(text):
+def _clean_translation_result(result, original):
+    """检查翻译结果是否真的产生了中文，避免把英文原文当成译文返回。"""
+    if not result:
+        return None
+    result = re.sub(r"\\s+", " ", str(result)).strip()
+    if not result or not contains_cjk(result):
+        return None
+    if result.casefold() == str(original).strip().casefold():
+        return None
+    return result
+
+
+def _translate_with_engines(text, target="zh"):
+    """按顺序尝试多个免费翻译引擎，失败自动切换。"""
+    if not text:
         return text
+
+    # 1. 用户配置的翻译 API
     if TRANSLATE_API_URL and TRANSLATE_API_KEY:
         try:
-            resp = requests.post(TRANSLATE_API_URL, json={"q": text, "target": "zh"}, headers={"Authorization": f"Bearer {TRANSLATE_API_KEY}"}, timeout=15)
+            resp = requests.post(
+                TRANSLATE_API_URL,
+                json={"q": text, "target": target},
+                headers={"Authorization": f"Bearer {TRANSLATE_API_KEY}"},
+                timeout=15,
+            )
             if resp.status_code == 200:
                 j = resp.json()
+                result = None
                 if isinstance(j, dict):
-                    return j.get("translatedText") or j.get("translation") or next(iter(j.values()))
-                return str(j)
+                    result = j.get("translatedText") or j.get("translation")
+                    if not result and j:
+                        result = next(iter(j.values()))
+                else:
+                    result = str(j)
+                if target == "zh":
+                    result = _clean_translation_result(result, text)
+                elif result:
+                    result = str(result).strip()
+                if result:
+                    return result
         except Exception:
             pass
-    # 回退到 deep-translator
-    if _deep_translator_available:
+
+    if not _deep_translator_available:
+        return None
+
+    # 2. Google Translate：主力免费引擎
+    try:
+        result = GoogleTranslator(
+            source="auto", target="zh-CN" if target == "zh" else "en"
+        ).translate(text)
+        if target == "zh":
+            result = _clean_translation_result(result, text)
+        elif result:
+            result = str(result).strip()
+        if result:
+            return result
+    except Exception:
+        pass
+
+    # 3. MyMemory：Google 临时不可用时的免费备用
+    try:
+        result = MyMemoryTranslator(
+            source="auto", target="zh-CN" if target == "zh" else "en"
+        ).translate(text)
+        if target == "zh":
+            result = _clean_translation_result(result, text)
+        elif result:
+            result = str(result).strip()
+        if result:
+            return result
+    except Exception:
+        pass
+
+    # 4. LibreTranslate：可选的第三重备用
+    # 环境变量示例：LIBRETRANSLATE_URL=https://libretranslate.com
+    libre_url = os.getenv("LIBRETRANSLATE_URL")
+    libre_key = os.getenv("LIBRETRANSLATE_API_KEY")
+    if libre_url:
         try:
-            return GoogleTranslator(source='auto', target='zh-CN').translate(text)
+            payload = {
+                "q": text,
+                "source": "auto",
+                "target": "zh" if target == "zh" else "en",
+                "format": "text",
+            }
+            if libre_key:
+                payload["api_key"] = libre_key
+            resp = requests.post(
+                libre_url.rstrip("/") + "/translate",
+                json=payload,
+                timeout=15,
+            )
+            if resp.status_code == 200:
+                j = resp.json()
+                result = j.get("translatedText") if isinstance(j, dict) else None
+                if target == "zh":
+                    result = _clean_translation_result(result, text)
+                elif result:
+                    result = str(result).strip()
+                if result:
+                    return result
         except Exception:
             pass
-    # 没有可用翻译时返回提示信息
-    return "没有对应的译文"
+
+    return None
+
+
+def translate(text):
+    """英文 -> 简体中文。失败时保留英文原文，而不是显示错误占位符。"""
+    if not text or contains_cjk(text):
+        return text
+    return _translate_with_engines(text, target="zh") or text
 
 
 def translate_to_en(text):
-    # 将中文翻译为英文
-    if not contains_cjk(text):
-        return text  # 如果已经是英文，直接返回
-    if TRANSLATE_API_URL and TRANSLATE_API_KEY:
-        try:
-            resp = requests.post(TRANSLATE_API_URL, json={"q": text, "target": "en"}, headers={"Authorization": f"Bearer {TRANSLATE_API_KEY}"}, timeout=15)
-            if resp.status_code == 200:
-                j = resp.json()
-                if isinstance(j, dict):
-                    return j.get("translatedText") or j.get("translation") or next(iter(j.values()))
-                return str(j)
-        except Exception:
-            pass
-    # 回退到 deep-translator
-    if _deep_translator_available:
-        try:
-            return GoogleTranslator(source='auto', target='en').translate(text)
-        except Exception:
-            pass
-    # 没有可用翻译时返回提示信息
-    return "No translation available"
+    """中文 -> 英文。失败时保留中文原文。"""
+    if not text or not contains_cjk(text):
+        return text
+    return _translate_with_engines(text, target="en") or text
 
 
 def parse_time(entry):
