@@ -144,13 +144,20 @@ SESSION.headers.update(
 # Translation cache: source text + target language -> translated result.
 _translation_cache: dict[tuple[str, str], str] = {}
 
+# Page title cache: url -> page title
+PAGE_TITLE_CACHE: dict[str, str] = {}
 
 # ---------------------------------------------------------------------------
 # Text helpers
 # ---------------------------------------------------------------------------
 
 def contains_cjk(text: str) -> bool:
-    return bool(re.search(r"[\u3400-\u9fff]", text or ""))
+    return bool(
+        re.search(
+            r"[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u3040-\u30FF\u31F0-\u31FF]",
+            text or "",
+        )
+    )
 
 
 def clean_text(text: str) -> str:
@@ -407,7 +414,7 @@ def translate(text: str, target: str = "zh-CN") -> str:
     """
     Robust translation wrapper.
 
-    - Chinese source + Chinese target: only normalize.
+    - Chinese source + Chinese target: normalize only.
     - English/other source: translate.
     - Long text: split into chunks.
     - Failure: return original text, never a fake error sentence.
@@ -418,7 +425,12 @@ def translate(text: str, target: str = "zh-CN") -> str:
 
     target_lower = target.lower()
 
-    if target_lower.startswith("zh") and contains_cjk(text):
+    # Only treat as pure Chinese when it's largely Chinese and not mixed with Latin
+    if (
+        target_lower.startswith("zh")
+        and contains_cjk(text)
+        and not re.search(r"[A-Za-z]", text)
+    ):
         return to_simplified(text)
 
     if target_lower.startswith("en") and not contains_cjk(text):
@@ -515,7 +527,12 @@ def compute_importance(item: dict) -> float:
 
     title = (item.get("title_en") or "").lower()
     source = (item.get("source") or "").lower()
-    desc = item.get("description") or ""
+
+    # Use description when available; otherwise assemble a textual summary.
+    desc = (
+        item.get("description")
+        or f"{item.get('summary_en') or ''} {item.get('summary_zh') or ''}".strip()
+    )
 
     high_sources = [
         "reuters",
@@ -635,6 +652,7 @@ def collect_top_items(limit: int = NEWS_LIMIT) -> list[dict]:
                     "title_zh": title_zh,
                     "summary_zh": summary_zh,
                     "summary_en": summary_en,
+                    "description": f"{summary_en} {summary_zh}".strip(),
                     "url": link,
                     "published": published,
                     "source": source,
@@ -678,6 +696,9 @@ def collect_top_items(limit: int = NEWS_LIMIT) -> list[dict]:
 
 def fetch_page_title(url: str) -> Optional[str]:
     """Best-effort extraction of an English HTML page title."""
+    if url in PAGE_TITLE_CACHE:
+        return PAGE_TITLE_CACHE[url]
+
     try:
         response = SESSION.get(
             url,
@@ -698,6 +719,7 @@ def fetch_page_title(url: str) -> Optional[str]:
             if match:
                 title = clean_text(match.group(1))
                 if title:
+                    PAGE_TITLE_CACHE[url] = title
                     return title
 
         match = re.search(
@@ -706,7 +728,10 @@ def fetch_page_title(url: str) -> Optional[str]:
             flags=re.I | re.S,
         )
         if match:
-            return clean_text(match.group(1))
+            title = clean_text(match.group(1))
+            if title:
+                PAGE_TITLE_CACHE[url] = title
+                return title
 
     except Exception as exc:
         logger.debug("Page title fetch failed for %s: %s", url, exc)
@@ -811,8 +836,9 @@ def send_email(subject: str, body_plain: str) -> None:
             timeout=60,
         ) as server:
             server.ehlo()
-            server.starttls()
-            server.ehlo()
+            if server.has_extn("STARTTLS"):
+                server.starttls()
+                server.ehlo()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.send_message(message)
 
