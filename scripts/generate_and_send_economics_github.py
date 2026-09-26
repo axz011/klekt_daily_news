@@ -89,7 +89,7 @@ LIBRETRANSLATE_URL = os.getenv(
 LIBRETRANSLATE_API_KEY = os.getenv("LIBRETRANSLATE_API_KEY", "").strip()
 
 # Runtime controls.
-NEWS_LIMIT = int(os.getenv("NEWS_LIMIT", "20"))
+NEWS_LIMIT = int(os.getenv("NEWS_LIMIT", "5"))
 SUMMARY_MAX_CHARS = int(os.getenv("SUMMARY_MAX_CHARS", "800"))
 TRANSLATION_CHUNK_SIZE = int(os.getenv("TRANSLATION_CHUNK_SIZE", "450"))
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "20"))
